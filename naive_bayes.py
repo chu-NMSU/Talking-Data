@@ -1,4 +1,5 @@
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_validation import cross_val_score
 from sklearn.feature_extraction.text import CountVectorizer
@@ -9,24 +10,24 @@ import time
 import datetime
 
 start_time = time.time()
-df_train = pd.read_csv('data/gender_age_train_join.csv', dtype={'device_id':str})
-df_test = pd.read_csv('data/gender_age_test_join.csv', dtype={'device_id':str})
+df_train = pd.read_csv('data/train_text.csv', dtype={'device_id':str})
+df_test = pd.read_csv('data/test_text.csv', dtype={'device_id':str})
 print 'reading time=', time.time()-start_time
 
 start_time = time.time()
 # numeric phone_brand
-df = pd.concat([df_train['phone_brand'], df_test['phone_brand']])
+df = pd.concat([df_train['phone_brand_en'], df_test['phone_brand_en']])
 a = pd.factorize(df)
 phone_brand_labels = a[1]
-df_train['phone_brand'] = a[0][0:df_train.shape[0]]
-df_test['phone_brand'] = a[0][df_train.shape[0]:df_train.shape[0]+df_test.shape[0]]
+df_train['phone_brand_en'] = a[0][0:df_train.shape[0]]
+df_test['phone_brand_en'] = a[0][df_train.shape[0]:df_train.shape[0]+df_test.shape[0]]
 
 # numeric device_model
-df = pd.concat([df_train['device_model'], df_test['device_model']])
+df = pd.concat([df_train['device_model_en'], df_test['device_model_en']])
 a = pd.factorize(df)
 device_model_labels = a[1]
-df_train['device_model'] = a[0][0:df_train.shape[0]]
-df_test['device_model'] = a[0][df_train.shape[0]:df_train.shape[0]+df_test.shape[0]]
+df_train['device_model_en'] = a[0][0:df_train.shape[0]]
+df_test['device_model_en'] = a[0][df_train.shape[0]:df_train.shape[0]+df_test.shape[0]]
 
 # numeric group
 a = pd.factorize(df_train['group'], sort=True)
@@ -34,8 +35,8 @@ df_train['group'] = a[0]
 group_labels = a[1]
 
 a=df=None
-df_train.drop(['text','phone_brand_en'], axis=1, inplace=True)
-df_test.drop(['text','phone_brand_en'], axis=1, inplace=True)
+# df_train.drop(['text','phone_brand_en'], axis=1, inplace=True)
+# df_test.drop(['text','phone_brand_en'], axis=1, inplace=True)
 df_train['text_brand'] = df_train['text_brand'].str.lower()
 df_test['text_brand'] = df_test['text_brand'].str.lower()
 gc.collect()

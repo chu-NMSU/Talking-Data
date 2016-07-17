@@ -112,5 +112,7 @@ df_test_join['text_brand'] = df_test_join['text'] + ' ' + df_test_join['phone_br
         ' '+ df_test_join['device_model_en']
 print 'join time=', time.time()-start_time
 
+df_train_join.drop(['phone_brand', 'device_model'], axis=1, inplace=True)
+df_test_join.drop(['phone_brand', 'device_model'], axis=1, inplace=True)
 df_train_join.to_csv('data/train_text.csv', index=False)
-df_test_join.to_csv('data/test_test.csv', index=False)
+df_test_join.to_csv('data/test_text.csv', index=False)
