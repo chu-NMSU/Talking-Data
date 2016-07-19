@@ -1,8 +1,9 @@
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_validation import cross_val_score
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 import pandas as pd
 import numpy as np
 import gc
@@ -51,14 +52,17 @@ X_test_text_count = X_text_counts[df_train.shape[0]:df_train.shape[0]+df_test.sh
 print 'vectorizing time=', time.time()-start_time
 
 start_time = time.time()
-clf = MultinomialNB(alpha=0.001, fit_prior=True)
+nb = MultinomialNB(alpha=0.001, fit_prior=True)
+rf = RandomForestClassifier(n_job=8)
+lr = LogisticRegression(solver='newton-cg')
+
 # 12 classes
 X = X_train_text_count
 y = df_train['group'].values
-clf.fit(X, y)
+nb.fit(X, y)
 
 X_test = X_test_text_count
-y_pred = clf.predict_proba(X_test)
+y_pred = nb.predict_proba(X_test)
 group_list = list(group_labels.values)
 for l in group_list:
     df_test[l] = 0

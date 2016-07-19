@@ -81,21 +81,21 @@ print 'joining app, event time=', time.time()-start_time
 start_time = time.time()
 '''events with phone app label text'''
 events_join = events.merge(events_text, on=['event_id']) # , how='left'
-events_join['text'].fillna('', inplace=True)
-'''some devices in 'events' do not have record in 'phone' '''
-# In [27]: len(set(pd.unique(events.device_id)).difference(set(pd.unique(phone.device_id))))
-# Out[27]: 2362
+#### events_join['text'].fillna('', inplace=True)
+# '''some devices in 'events' do not have record in 'phone' '''
+# # In [27]: len(set(pd.unique(events.device_id)).difference(set(pd.unique(phone.device_id))))
+# # Out[27]: 2362
 events_phone_join = events_join.merge(phone, on=['device_id']) # , how='left'
 
-'''some device do not have records, use brand and model to fill the text'''
-df_train_join = df_train.merge(events_phone_join, on=['device_id'], how='left') # 
+# '''some device do not have records, use brand and model to fill the text'''
+df_train_join = df_train.merge(events_phone_join, on=['device_id']) # , how='left'
 df_train_join['text'].fillna('', inplace=True)
-a = df_train_join[['device_id']].merge(phone[['device_id','phone_brand_en','device_model_en']], \
-        on='device_id')
-a.sort_values(by='device_id', inplace=True)
-df_train_join.sort_values(by='device_id', inplace=True)
-df_train_join['phone_brand_en'] = a['phone_brand_en'].values
-df_train_join['device_model_en'] = a['device_model_en'].values
+# a = df_train_join[['device_id']].merge(phone[['device_id','phone_brand_en','device_model_en']], \
+#         on='device_id')
+# a.sort_values(by='device_id', inplace=True)
+# df_train_join.sort_values(by='device_id', inplace=True)
+# df_train_join['phone_brand_en'] = a['phone_brand_en'].values
+# df_train_join['device_model_en'] = a['device_model_en'].values
 df_train_join['text_brand'] = df_train_join['text'] + ' ' + df_train_join['phone_brand_en']\
         + ' ' + df_train_join['device_model_en']
 
