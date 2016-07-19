@@ -44,25 +44,28 @@ df_test['text_brand'] = df_test['text_brand'].str.lower()
 gc.collect()
 print 'numericing attributes time=', time.time()-start_time
 
-start_time = time.time()
-count_vect = CountVectorizer()
-df = pd.concat([df_train['text_brand'], df_test['text_brand']])
-X_text_counts = count_vect.fit_transform(df)
-X_train_text_count = X_text_counts[0:df_train.shape[0],:]
-X_test_text_count = X_text_counts[df_train.shape[0]:df_train.shape[0]+df_test.shape[0],:]
-print 'vectorizing time=', time.time()-start_time
+### word count does not work well, TODO fill the missing value first
+# start_time = time.time()
+# count_vect = CountVectorizer()
+# df = pd.concat([df_train['text_brand'], df_test['text_brand']])
+# X_text_counts = count_vect.fit_transform(df)
+# X_train_text_count = X_text_counts[0:df_train.shape[0],:]
+# X_test_text_count = X_text_counts[df_train.shape[0]:df_train.shape[0]+df_test.shape[0],:]
+# print 'vectorizing time=', time.time()-start_time
 
 start_time = time.time()
-nb = MultinomialNB(alpha=0.001, fit_prior=True)
+nb = MultinomialNB(alpha=0.1, fit_prior=True)
 rf = RandomForestClassifier(n_jobs=8)
 lr = LogisticRegression(solver='sag')
 
 # 12 classes
-X = df_train[['phone_brand_en','device_model_en']]
-X_test = df_test[['phone_brand_en','device_model_en']]
 ### word count feature
 # X = X_train_text_count
 # X_test = X_test_text_count
+# X = df_train[['phone_brand_en','device_model_en']].values
+# X_test = df_test[['phone_brand_en','device_model_en']].values
+X = df_train[['phone_brand_en']].values
+X_test = df_test[['phone_brand_en']].values
 y = df_train['group'].values
 print 'training size', X.shape, 'test size', X_test.shape
 
@@ -77,7 +80,7 @@ for l in group_list:
     df_test[l] = 0
 df_test[group_list] = y_pred
 # , 'phone_brand_en', 'device_model_en'
-df_test.to_csv('output/brand_device_model_nb-'+\
+df_test.to_csv('output/phone_brand_nb-'+\
         str(datetime.datetime.now().strftime('%Y-%m-%d-%H-%M'))+'.csv', \
         columns=['device_id']+group_list, index=False)
 

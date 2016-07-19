@@ -111,9 +111,11 @@ df_train_join = df_train.merge(events_phone_join, on=['device_id']) # , how='lef
 df_train_join['text_brand'] = df_train_join['text'] + ' ' + df_train_join['phone_brand_en']\
         + ' ' + df_train_join['device_model_en']
 
+# df_test_join.shape =            (112071, 12)
+# df_test_join.text.isnull().sum() = 95226 # 9/11 test case have missing values...
 df_test_join = df_test.merge(events_phone_join, on=['device_id'], how='left') # 
 df_test_join.drop_duplicates(subset=['device_id'],inplace=True) # keep only one unique device_id
-df_test_join['text'].fillna('', inplace=True)
+# df_test_join['text'].fillna('', inplace=True)
 a = df_test_join[['device_id']].merge(phone[['device_id','phone_brand_en','device_model_en']], \
         on='device_id')
 a.sort_values(by='device_id', inplace=True)
