@@ -1,5 +1,6 @@
 from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_validation import cross_val_score
+from sklearn.metrics import log_loss
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
@@ -53,23 +54,31 @@ print 'vectorizing time=', time.time()-start_time
 
 start_time = time.time()
 nb = MultinomialNB(alpha=0.001, fit_prior=True)
-rf = RandomForestClassifier(n_job=8)
-lr = LogisticRegression(solver='newton-cg')
+rf = RandomForestClassifier(n_jobs=8)
+lr = LogisticRegression(solver='sag')
 
 # 12 classes
-X = X_train_text_count
+X = df_train[['phone_brand_en','device_model_en']]
+X_test = df_test[['phone_brand_en','device_model_en']]
+### word count feature
+# X = X_train_text_count
+# X_test = X_test_text_count
 y = df_train['group'].values
-nb.fit(X, y)
+print 'training size', X.shape, 'test size', X_test.shape
 
-X_test = X_test_text_count
+nb.fit(X, y)
+print 'training time=', time.time()-start_time
+
+start_time = time.time()
+
 y_pred = nb.predict_proba(X_test)
 group_list = list(group_labels.values)
 for l in group_list:
     df_test[l] = 0
 df_test[group_list] = y_pred
 # , 'phone_brand_en', 'device_model_en'
-df_test.to_csv('output/text_nb-'+\
+df_test.to_csv('output/brand_device_model_nb-'+\
         str(datetime.datetime.now().strftime('%Y-%m-%d-%H-%M'))+'.csv', \
         columns=['device_id']+group_list, index=False)
 
-print 'training, predicting time=', time.time()-start_time
+print 'predicting time=', time.time()-start_time

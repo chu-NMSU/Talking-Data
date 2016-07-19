@@ -7,6 +7,7 @@ import time
 import matplotlib
 import matplotlib.pyplot as plt
 
+# pd.set_option("display.max_rows",101) # set # of display rows
 pattern = re.compile('[a-fA-Z0-9_ ]+')
 
 def text_process_fun(x):
@@ -23,6 +24,17 @@ d_times = pd.DatetimeIndex(events['timestamp'].apply(\
 events['dayofyear'] = d_times.dayofyear
 events['hour'] = d_times.hour
 events['weekday'] = d_times.weekday
+print 'before pruning data, events.shape=', events.shape
+
+# only use phone China to train model
+lon_min, lon_max = 75, 135
+lat_min, lat_max = 15, 55
+idx_china = (events["longitude"]>lon_min) &\
+            (events["longitude"]<lon_max) &\
+            (events["latitude"]>lat_min) &\
+            (events["latitude"]<lat_max)
+events = events[idx_china]
+print 'after removing phones outside China, events.shape=', events.shape
 
 app_events = pd.read_csv('data/app_events.csv', dtype={'app_id':str})
 app_labels = pd.read_csv('data/app_labels.csv', dtype={'app_id':str})
@@ -89,7 +101,7 @@ events_phone_join = events_join.merge(phone, on=['device_id']) # , how='left'
 
 # '''some device do not have records, use brand and model to fill the text'''
 df_train_join = df_train.merge(events_phone_join, on=['device_id']) # , how='left'
-df_train_join['text'].fillna('', inplace=True)
+# df_train_join['text'].fillna('', inplace=True)
 # a = df_train_join[['device_id']].merge(phone[['device_id','phone_brand_en','device_model_en']], \
 #         on='device_id')
 # a.sort_values(by='device_id', inplace=True)
