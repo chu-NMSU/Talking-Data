@@ -108,11 +108,12 @@ df_train_join = df_train.merge(events_phone_join, on=['device_id']) # , how='lef
 # df_train_join.sort_values(by='device_id', inplace=True)
 # df_train_join['phone_brand_en'] = a['phone_brand_en'].values
 # df_train_join['device_model_en'] = a['device_model_en'].values
-df_train_join['text_brand'] = df_train_join['text'] + ' ' + df_train_join['phone_brand_en']\
-        + ' ' + df_train_join['device_model_en']
+# df_train_join['text_brand'] = df_train_join['text'] + ' ' + df_train_join['phone_brand_en']\
+#         + ' ' + df_train_join['device_model_en']
 
-# df_test_join.shape =            (112071, 12)
-# df_test_join.text.isnull().sum() = 95226 # 9/11 test case have missing values...
+'''9/11 test case have missing values...'''
+# df_test_join.shape =             (112071, 12)
+# df_test_join.text.isnull().sum() = 95226 # 
 df_test_join = df_test.merge(events_phone_join, on=['device_id'], how='left') # 
 df_test_join.drop_duplicates(subset=['device_id'],inplace=True) # keep only one unique device_id
 # df_test_join['text'].fillna('', inplace=True)
@@ -122,11 +123,17 @@ a.sort_values(by='device_id', inplace=True)
 df_test_join.sort_values(by='device_id', inplace=True)
 df_test_join['phone_brand_en'] = a['phone_brand_en'].values
 df_test_join['device_model_en'] = a['device_model_en'].values
-df_test_join['text_brand'] = df_test_join['text'] + ' ' + df_test_join['phone_brand_en']+\
-        ' '+ df_test_join['device_model_en']
+# df_test_join['text_brand'] = df_test_join['text'] + ' ' + df_test_join['phone_brand_en']+\
+#         ' '+ df_test_join['device_model_en']
+
+'''some phone brands in test data even do not exist in training data...'''
+# In [1]: df_test_join[~df_test_join.phone_brand_en.isin(df_train_join.phone_brand_en.unique())].shape
+# Out[1]: (1318, 14)
+
+
 print 'join time=', time.time()-start_time
 
-df_train_join.drop(['phone_brand', 'device_model'], axis=1, inplace=True)
-df_test_join.drop(['phone_brand', 'device_model'], axis=1, inplace=True)
-df_train_join.to_csv('data/train_text.csv', index=False)
-df_test_join.to_csv('data/test_text.csv', index=False)
+# df_train_join.drop(['phone_brand', 'device_model'], axis=1, inplace=True)
+# df_test_join.drop(['phone_brand', 'device_model'], axis=1, inplace=True)
+# df_train_join.to_csv('data/train_text.csv', index=False)
+# df_test_join.to_csv('data/test_text.csv', index=False)
