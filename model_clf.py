@@ -38,10 +38,13 @@ logger.addHandler(ch)
 def train_model_with_feature(config_name, clf_name, clf, X, X_test, y):
     logger.info('start training')
     print 'training size', X.shape, 'test size', X_test.shape
-    clf.fit(X, y)
-    y_prob = clf.predict_proba(X)
-    print 'log loss on training data=', log_loss(y, y_prob)
+    X_train, X_val, y_train, y_val = train_text_China(X, y, train_size=0.9)
+    clf.fit(X_train,y_train)
+    logger.infor('train log-loss='+str(log_loss(y_train, clf.predict_proba(X_train))))
+    logger.infor('validate log-loss='+str(log_loss(y_val, clf.predict_proba(X_val))))
 
+
+    clf.fit(X, y)
     y_pred = clf.predict_proba(X_test)
     df_test[group_list] = y_pred
     logger.info('finish training')
@@ -184,6 +187,7 @@ if __name__=='__main__':
     elif clf_name=='rf':
         clf = RandomForestClassifier(n_jobs=8, n_estimators=500)
     elif clf_name=='xgb':
-        clf = xgb.XGBClassifier(nthread=8, n_estimators=500, max_depth=10)#subsample=0.5, colsample_bytree=0.5, colsample_bylevel=0.9
+        #subsample=0.5, colsample_bytree=0.5, colsample_bylevel=0.9
+        clf = xgb.XGBClassifier(nthread=8, n_estimators=500, max_depth=10)
 
     train_model_with_feature(config_name, clf_name, clf, X, X_test, y)
