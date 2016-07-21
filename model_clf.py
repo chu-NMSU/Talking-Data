@@ -1,5 +1,5 @@
 from sklearn.preprocessing import LabelEncoder
-from sklearn.cross_validation import cross_val_score
+from sklearn.cross_validation import cross_val_score, train_test_split
 from sklearn.metrics import log_loss
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
@@ -77,7 +77,7 @@ def fill_na_test(df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, \
 
     return df_test, X_test_text_tfidf, X_test_text_count
 
-def preprocess_data(df_train, df_test):
+def preprocess_data(df_train, df_test, fill_na_opt):
     logger.info('start preprocessing data')
 
     ## text feature engineering
@@ -98,7 +98,7 @@ def preprocess_data(df_train, df_test):
 
     # TODO refactor filling strategy later
     df_test, X_test_text_tfidf, X_test_text_count = fill_na_test(df_train, df_test, \
-        X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, X_test_text_count, 'pb_mean')
+        X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, X_test_text_count, fill_na_opt)
 
     # vectorizing phone_brand device_model
     df = pd.concat([df_train['phone_brand_en']+' '+df_train['device_model_en'], \
@@ -112,10 +112,10 @@ def preprocess_data(df_train, df_test):
     X_train_pd_tfidf = X_pd_tfidf[0:df_train.shape[0],:]
     X_test_pd_tfidf = X_pd_tfidf[df_train.shape[0]:,:]
     # concatenate text, phone brand, device model matrix
-    X_train_text_count = hstack(X_train_text_count, X_train_pd_count).toarray()
-    X_test_text_count = hstack(X_test_text_count, X_test_pd_count).toarray()
-    X_train_text_tfidf = hstack(X_train_text_tfidf, X_train_pd_tfidf).toarray()
-    X_test_text_tfidf = hstack(X_test_text_tfidf, X_test_pd_tfidf).toarray()
+    X_train_text_count = np.hstack([X_train_text_count, X_train_pd_count])
+    X_test_text_count = np.hstack([X_test_text_count, X_test_pd_count])
+    X_train_text_tfidf = np.hstack([X_train_text_tfidf, X_train_pd_tfidf])
+    X_test_text_tfidf = np.hstack([X_test_text_tfidf, X_test_pd_tfidf])
 
     # numeric phone_brand
     df = pd.concat([df_train['phone_brand_en'], df_test['phone_brand_en']])
@@ -149,6 +149,7 @@ if __name__=='__main__':
     logging.info('logging_test')
     config_path = sys.argv[1]
     config_name = sys.argv[2]
+    fill_na_opt = sys.argv[3]
     config = ConfigParser.ConfigParser()
     config.read(config_path)
     labels = config.get(config_name, 'labels').split(',')
@@ -160,7 +161,7 @@ if __name__=='__main__':
     df_test = pd.read_csv('data/test_text_China.csv', dtype={'device_id':str})
 
     df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, \
-            X_test_text_count = preprocess_data(df_train, df_test)
+            X_test_text_count = preprocess_data(df_train, df_test, fill_na_opt)
 
     X = X_test = None
     y = df_train['group'].values
