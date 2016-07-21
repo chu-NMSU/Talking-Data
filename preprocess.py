@@ -26,15 +26,15 @@ events['hour'] = d_times.hour
 events['weekday'] = d_times.weekday
 print 'before pruning data, events.shape=', events.shape
 
-# only use phone China to train model
-lon_min, lon_max = 75, 135
-lat_min, lat_max = 15, 55
-idx_china = (events["longitude"]>lon_min) &\
-            (events["longitude"]<lon_max) &\
-            (events["latitude"]>lat_min) &\
-            (events["latitude"]<lat_max)
-events = events[idx_china]
-print 'after removing phones outside China, events.shape=', events.shape
+# # only use phone China to train model
+# lon_min, lon_max = 75, 135
+# lat_min, lat_max = 15, 55
+# idx_china = (events["longitude"]>lon_min) &\
+#             (events["longitude"]<lon_max) &\
+#             (events["latitude"]>lat_min) &\
+#             (events["latitude"]<lat_max)
+# events = events[idx_china]
+# print 'after removing phones outside China, events.shape=', events.shape
 
 app_events = pd.read_csv('data/app_events.csv', dtype={'app_id':str})
 app_labels = pd.read_csv('data/app_labels.csv', dtype={'app_id':str})
@@ -101,7 +101,7 @@ events_phone_join = events_join.merge(phone, on=['device_id']) # , how='left'
 
 # '''some device do not have records, use brand and model to fill the text'''
 df_train_join = df_train.merge(events_phone_join, on=['device_id']) # , how='left'
-# df_train_join['text'].fillna('', inplace=True)
+df_train_join['text'].fillna('', inplace=True)
 # a = df_train_join[['device_id']].merge(phone[['device_id','phone_brand_en','device_model_en']], \
 #         on='device_id')
 # a.sort_values(by='device_id', inplace=True)
@@ -116,7 +116,7 @@ df_train_join = df_train.merge(events_phone_join, on=['device_id']) # , how='lef
 # df_test_join.text.isnull().sum() = 95226 # 
 df_test_join = df_test.merge(events_phone_join, on=['device_id'], how='left') # 
 df_test_join.drop_duplicates(subset=['device_id'],inplace=True) # keep only one unique device_id
-# df_test_join['text'].fillna('', inplace=True)
+df_test_join['text'].fillna('', inplace=True)
 a = df_test_join[['device_id']].merge(phone[['device_id','phone_brand_en','device_model_en']], \
         on='device_id')
 a.sort_values(by='device_id', inplace=True)
@@ -124,16 +124,15 @@ df_test_join.sort_values(by='device_id', inplace=True)
 df_test_join['phone_brand_en'] = a['phone_brand_en'].values
 df_test_join['device_model_en'] = a['device_model_en'].values
 # df_test_join['text_brand'] = df_test_join['text'] + ' ' + df_test_join['phone_brand_en']+\
-#         ' '+ df_test_join['device_model_en']
+#      ' '+ df_test_join['device_model_en']
 
 '''some phone brands in test data even do not exist in training data...'''
 # In [1]: df_test_join[~df_test_join.phone_brand_en.isin(df_train_join.phone_brand_en.unique())].shape
 # Out[1]: (1318, 14)
 
-
 print 'join time=', time.time()-start_time
 
 # df_train_join.drop(['phone_brand', 'device_model'], axis=1, inplace=True)
 # df_test_join.drop(['phone_brand', 'device_model'], axis=1, inplace=True)
-# df_train_join.to_csv('data/train_text.csv', index=False)
-# df_test_join.to_csv('data/test_text.csv', index=False)
+df_train_join.to_csv('data/train_text.csv', index=False)
+df_test_join.to_csv('data/test_text.csv', index=False)
