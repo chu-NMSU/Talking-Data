@@ -169,12 +169,6 @@ def preprocess_data(df_train, df_test, fill_na_opt):
     logger.info('finish numericing, vectorizing attributes')
     return df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, X_test_text_count
 
-# TODO
-def xgb_parameter_search(X, X_test, y):
-    # parameters = {'objective':['multi:softprob'], 'nthread':[1], 'n_estimators':[1000], 'subsample':[0.5], 'max_depth':range(3,15)}
-    parameters = {'objective':['multi:softprob'], 'nthread':[1], 'n_estimators':[1000], 'subsample':[0.5],\
-            'learning_rate':np.linespace(0.01,0.2,20)}
-
 if __name__=='__main__':
     logging.info('logging_test')
     config_path = sys.argv[1]
