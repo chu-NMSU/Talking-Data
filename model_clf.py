@@ -5,7 +5,6 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.grid_search import GridSearchCV, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 import xgboost as xgb
 import pandas as pd
@@ -17,6 +16,7 @@ import time
 import logging
 import datetime
 import ConfigParser
+from parameter_tune import *
 
 # create logger
 logger = logging.getLogger('Talking-Data-model')
@@ -116,9 +116,9 @@ def preprocess_data(df_train, df_test, fill_na_opt):
     if os.path.exists('data/X_test_text_count-'+fill_na_opt+'.csv') and \
             os.path.exists('data/X_test_text_tfidf-'+fill_na_opt+'.csv'):
         X_test_text_count = np.loadtxt('data/X_test_text_count-'+fill_na_opt+'.csv', \
-                X_test_text_count, delimiter=',')
+                delimiter=',')
         X_test_text_tfidf = np.loadtxt('data/X_test_text_tfidf-'+fill_na_opt+'.csv', \
-                X_test_text_tfidf, delimiter=',')
+                delimiter=',')
     else:
         X_test_text_tfidf, X_test_text_count = fill_na_test(df_train, df_test, \
                 X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, \
@@ -174,6 +174,10 @@ if __name__=='__main__':
     config_path = sys.argv[1]
     config_name = sys.argv[2]
     fill_na_opt = sys.argv[3]
+    parameter_tune = ''
+    if len(sys.argv)>=5:
+        parameter_tune = sys.argv[4]
+
     config = ConfigParser.ConfigParser()
     config.read(config_path)
     labels = config.get(config_name, 'labels').split(',')
@@ -210,4 +214,7 @@ if __name__=='__main__':
         clf = xgb.XGBClassifier(objective='multi:softprob', nthread=8, n_estimators=1000,\
             max_depth=10, silent=False, subsample=0.8, colsample_bytree=0.5)
 
-    train_model_with_feature(config_name, clf_name, fill_na_opt, clf, X, X_test, y)
+    if parameter_tune=='rf':
+        rf_parameter_search(X, X_test, y)
+    else:
+        train_model_with_feature(config_name, clf_name, fill_na_opt, clf, X, X_test, y)
