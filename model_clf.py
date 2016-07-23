@@ -209,7 +209,8 @@ if __name__=='__main__':
     elif clf_name=='lr':
         clf = LogisticRegression()
     elif clf_name=='rf':
-        clf = RandomForestClassifier(n_jobs=8, n_estimators=1000, min_samples_leaf=10)
+        clf = RandomForestClassifier(n_jobs=4, n_estimators=1000, max_depth=12, \
+                min_samples_leaf=17)
     elif clf_name=='xgb':
         clf = xgb.XGBClassifier(objective='multi:softprob', nthread=8, n_estimators=1000,\
             max_depth=10, silent=False, subsample=0.8, colsample_bytree=0.5)
