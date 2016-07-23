@@ -55,18 +55,19 @@ def train_model_with_feature(config_name, clf_name, fill_na_opt, PCA_n_comp, clf
         clf.fit(X_train,y_train,eval_metric='mlogloss')
     else:
         clf.fit(X_train,y_train)
-    logger.info('train log-loss='+str(log_loss(y_train, clf.predict_proba(X_train))))
-    logger.info('validate log-loss='+str(log_loss(y_val, clf.predict_proba(X_val))))
-
+    logger.info(clf_name+'-'+fill_na_opt+'-pca('+str(PCA_n_comp)+') train log-loss='\
+            +str(log_loss(y_train, clf.predict_proba(X_train))))
+    logger.info(clf_name+'-'+fill_na_opt+'-pca('+str(PCA_n_comp)+')validate log-loss='\
+            +str(log_loss(y_val, clf.predict_proba(X_val))))
 
     clf.fit(X, y)
     y_pred = clf.predict_proba(X_test)
     df_test[group_list] = y_pred
     logger.info('finish training')
     # , 'phone_brand_en', 'device_model_en'
-    df_test.to_csv('output/'+config_name+'-'+clf_name+'-'+fill_na_opt+\
-            str(datetime.datetime.now().strftime('%Y-%m-%d-%H-%M'))+'.csv', \
-            columns=['device_id']+group_list, index=False)
+    df_test.to_csv('output/'+config_name+'-'+clf_name+'-'+fill_na_opt+'-pca'+\
+            str(PCA_n_comp)+'-'+str(datetime.datetime.now().strftime('%Y-%m-%d-%H-%M'))\
+            +'.csv', columns=['device_id']+group_list, index=False)
     logger.info('finish outputing result')
 
 def fill_na_test(df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, \
