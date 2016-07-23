@@ -5,11 +5,14 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.grid_search import GridSearchCV, RandomizedSearchCV
+from sklearn.pipeline import Pipeline
 import xgboost as xgb
 import pandas as pd
 import numpy as np
 import gc
 import sys
+import os
 import time
 import logging
 import datetime
@@ -35,13 +38,16 @@ logger.addHandler(ch)
 # logger.error("error message")
 # logger.critical("critical message")
 
-def train_model_with_feature(config_name, clf_name, clf, X, X_test, y):
+def train_model_with_feature(config_name, clf_name, fill_na_opt, clf, X, X_test, y):
     logger.info('start training')
     print 'training size', X.shape, 'test size', X_test.shape
-    X_train, X_val, y_train, y_val = train_text_China(X, y, train_size=0.9)
-    clf.fit(X_train,y_train)
-    logger.infor('train log-loss='+str(log_loss(y_train, clf.predict_proba(X_train))))
-    logger.infor('validate log-loss='+str(log_loss(y_val, clf.predict_proba(X_val))))
+    X_train, X_val, y_train, y_val = train_test_split(X, y, train_size=0.9)
+    if clf_name=='xgb':
+        clf.fit(X_train,y_train,eval_metric='mlogloss')
+    else:
+        clf.fit(X_train,y_train)
+    logger.info('train log-loss='+str(log_loss(y_train, clf.predict_proba(X_train))))
+    logger.info('validate log-loss='+str(log_loss(y_val, clf.predict_proba(X_val))))
 
 
     clf.fit(X, y)
@@ -49,13 +55,14 @@ def train_model_with_feature(config_name, clf_name, clf, X, X_test, y):
     df_test[group_list] = y_pred
     logger.info('finish training')
     # , 'phone_brand_en', 'device_model_en'
-    df_test.to_csv('output/'+config_name+'-'+clf_name+'-'+\
+    df_test.to_csv('output/'+config_name+'-'+clf_name+'-'+fill_na_opt+\
             str(datetime.datetime.now().strftime('%Y-%m-%d-%H-%M'))+'.csv', \
             columns=['device_id']+group_list, index=False)
     logger.info('finish outputing result')
 
 def fill_na_test(df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, \
         X_train_text_count, X_test_text_count, option):
+    logger.info('start to fill na data')
     if option=='rand_text':
         # fill NA with first text from the same phone brand. very slow
         for i in range(0, df_test.shape[0]):
@@ -76,9 +83,14 @@ def fill_na_test(df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, \
             if len(df_test.loc[i,'text'])==0:
                 if df_test.loc[i,'phone_brand_en'] in pb_group.groups:
                     group = pb_group.get_group(df_test.loc[i,'phone_brand_en'])
-                    X_test_text_count[i,:] = X_train_text_count[group.index,:].mean(axis=0)
+                    X_test_text_count[i,:]=X_train_text_count[group.index,:].mean(axis=0)
 
-    return df_test, X_test_text_tfidf, X_test_text_count
+    ## TODO save filled matrix
+    np.savetxt('data/X_test_text_count-'+option+'.csv', X_test_text_count, delimiter=',')
+    np.savetxt('data/X_test_text_tfidf-'+option+'.csv', X_test_text_tfidf, delimiter=',')
+    logger.info('finish filling na data')
+
+    return X_test_text_tfidf, X_test_text_count
 
 def preprocess_data(df_train, df_test, fill_na_opt):
     logger.info('start preprocessing data')
@@ -99,9 +111,18 @@ def preprocess_data(df_train, df_test, fill_na_opt):
     X_train_text_tfidf = X_text_tfidf[0:df_train.shape[0],:]
     X_test_text_tfidf = X_text_tfidf[df_train.shape[0]:,:]
 
-    # TODO refactor filling strategy later
-    df_test, X_test_text_tfidf, X_test_text_count = fill_na_test(df_train, df_test, \
-        X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, X_test_text_count, fill_na_opt)
+    logger.info('finish vectorizing data')
+
+    if os.path.exists('data/X_test_text_count-'+fill_na_opt+'.csv') and \
+            os.path.exists('data/X_test_text_tfidf-'+fill_na_opt+'.csv'):
+        X_test_text_count = np.loadtxt('data/X_test_text_count-'+fill_na_opt+'.csv', \
+                X_test_text_count, delimiter=',')
+        X_test_text_tfidf = np.loadtxt('data/X_test_text_tfidf-'+fill_na_opt+'.csv', \
+                X_test_text_tfidf, delimiter=',')
+    else:
+        X_test_text_tfidf, X_test_text_count = fill_na_test(df_train, df_test, \
+                X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, \
+                X_test_text_count, fill_na_opt)
 
     # vectorizing phone_brand device_model
     df = pd.concat([df_train['phone_brand_en']+' '+df_train['device_model_en'], \
@@ -148,6 +169,12 @@ def preprocess_data(df_train, df_test, fill_na_opt):
     logger.info('finish numericing, vectorizing attributes')
     return df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, X_test_text_count
 
+# TODO
+def xgb_parameter_search(X, X_test, y):
+    # parameters = {'objective':['multi:softprob'], 'nthread':[1], 'n_estimators':[1000], 'subsample':[0.5], 'max_depth':range(3,15)}
+    parameters = {'objective':['multi:softprob'], 'nthread':[1], 'n_estimators':[1000], 'subsample':[0.5],\
+            'learning_rate':np.linespace(0.01,0.2,20)}
+
 if __name__=='__main__':
     logging.info('logging_test')
     config_path = sys.argv[1]
@@ -180,14 +207,13 @@ if __name__=='__main__':
 
     clf = None
     if clf_name=='nb':
-        # parameters = # TODO
         clf = MultinomialNB(alpha=0.001, fit_prior=True)
     elif clf_name=='lr':
         clf = LogisticRegression()
     elif clf_name=='rf':
-        clf = RandomForestClassifier(n_jobs=8, n_estimators=500)
+        clf = RandomForestClassifier(n_jobs=8, n_estimators=1000, min_samples_leaf=10)
     elif clf_name=='xgb':
-        #subsample=0.5, colsample_bytree=0.5, colsample_bylevel=0.9
-        clf = xgb.XGBClassifier(nthread=8, n_estimators=500, max_depth=10)
+        clf = xgb.XGBClassifier(objective='multi:softprob', nthread=8, n_estimators=1000,\
+            max_depth=10, silent=False, subsample=0.8, colsample_bytree=0.5)
 
-    train_model_with_feature(config_name, clf_name, clf, X, X_test, y)
+    train_model_with_feature(config_name, clf_name, fill_na_opt, clf, X, X_test, y)
