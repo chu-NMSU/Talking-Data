@@ -215,6 +215,7 @@ if __name__=='__main__':
             max_depth=10, silent=False, subsample=0.8, colsample_bytree=0.5)
 
     if parameter_tune=='rf':
+        logger.info('start randome forest parameter grid search')
         rf_parameter_search(X, X_test, y)
     else:
         train_model_with_feature(config_name, clf_name, fill_na_opt, clf, X, X_test, y)

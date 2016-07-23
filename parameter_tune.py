@@ -7,7 +7,6 @@ def xgb_parameter_search(X, X_test, y):
     # TODO
 
 def rf_parameter_search(X, X_test, y):
-    logger.info('start randome forest parameter grid search')
     rf = RandomForestClassifier()
     parameters={'max_depth':range(3,15), 'min_samples_leaf':range(5,20)}
     clf = GridSearchCV(rf, parameters, cv=5, n_jobs=5)
