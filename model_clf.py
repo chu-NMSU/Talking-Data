@@ -6,6 +6,8 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import maxabs_scale
+from sklearn.decomposition import PCA
 import xgboost as xgb
 import pandas as pd
 import numpy as np
@@ -38,7 +40,14 @@ logger.addHandler(ch)
 # logger.error("error message")
 # logger.critical("critical message")
 
-def train_model_with_feature(config_name, clf_name, fill_na_opt, clf, X, X_test, y):
+def train_model_with_feature(config_name, clf_name, fill_na_opt, PCA_n_comp, clf, X, X_test, y):
+    if PCA_n_comp!=-1:
+        pca = PCA(PCA_n_comp) #PCA dimension reduction
+        logger.info('PCA fit on count matrix')
+        X_all = pca.fit_transform(np.vstack([X, X_test]))
+        X, X_test = X_all[:X.shape[0], :], X_all[X.shape[0]:, :]
+        logger.info('PCA fit done')
+
     logger.info('start training')
     print 'training size', X.shape, 'test size', X_test.shape
     X_train, X_val, y_train, y_val = train_test_split(X, y, train_size=0.9)
@@ -135,6 +144,7 @@ def preprocess_data(df_train, df_test, fill_na_opt):
     X_pd_tfidf = tfidf_vect.fit_transform(df).toarray()
     X_train_pd_tfidf = X_pd_tfidf[0:df_train.shape[0],:]
     X_test_pd_tfidf = X_pd_tfidf[df_train.shape[0]:,:]
+
     # concatenate text, phone brand, device model matrix
     X_train_text_count = np.hstack([X_train_text_count, X_train_pd_count])
     X_test_text_count = np.hstack([X_test_text_count, X_test_pd_count])
@@ -171,12 +181,15 @@ def preprocess_data(df_train, df_test, fill_na_opt):
 
 if __name__=='__main__':
     logging.info('logging_test')
+    if len(sys.argv)<5:
+        print 'python model_clf.py config_path comfig_name fill_na_opt PCA_n_comp <parameter_tune_opt>'
     config_path = sys.argv[1]
     config_name = sys.argv[2]
     fill_na_opt = sys.argv[3]
+    PCA_n_comp = int(sys.argv[4])
     parameter_tune = ''
-    if len(sys.argv)>=5:
-        parameter_tune = sys.argv[4]
+    if len(sys.argv)>=6:
+        parameter_tune = sys.argv[5]
 
     config = ConfigParser.ConfigParser()
     config.read(config_path)
@@ -219,4 +232,5 @@ if __name__=='__main__':
         logger.info('start randome forest parameter grid search')
         rf_parameter_search(X, X_test, y)
     else:
-        train_model_with_feature(config_name, clf_name, fill_na_opt, clf, X, X_test, y)
+        train_model_with_feature(config_name, clf_name, fill_na_opt, PCA_n_comp, clf, X, X_test, y)
+

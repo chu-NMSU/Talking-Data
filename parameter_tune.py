@@ -1,5 +1,6 @@
 from sklearn.grid_search import GridSearchCV, RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
 import xgboost as xgb
 
 def xgb_parameter_search(X, X_test, y):
@@ -26,3 +27,7 @@ def rf_parameter_search(X, X_test, y):
     #     warm_start=False)
     # best score= 0.243199188612
     # best parameters= {'max_depth': 12, 'min_samples_leaf': 17}
+
+def pca_lr_parameter_search(X, X_test, y):
+    pca_lr = Pipeline()
+    # TODO
