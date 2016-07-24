@@ -95,9 +95,11 @@ def fill_na_test(df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, \
                     group = pb_group.get_group(df_test.loc[i,'phone_brand_en'])
                     X_test_text_count[i,:]=X_train_text_count[group.index,:].mean(axis=0)
 
-    ## TODO save filled matrix
+    ## save filled matrix
     np.savetxt('data/X_test_text_count-'+option+'.csv', X_test_text_count, delimiter=',')
     np.savetxt('data/X_test_text_tfidf-'+option+'.csv', X_test_text_tfidf, delimiter=',')
+    np.savetxt('data/X_train_text_count-'+option+'.csv', X_train_text_count, delimiter=',')
+    np.savetxt('data/X_train_text_tfidf-'+option+'.csv', X_train_text_tfidf, delimiter=',')
     logger.info('finish filling na data')
 
     return X_test_text_tfidf, X_test_text_count
@@ -110,26 +112,34 @@ def preprocess_data(df_train, df_test, fill_na_opt):
     df_test['text'] = df_test['text'].str.lower()
     df_test['text'] = df_test['text'].fillna('')
 
-    df = pd.concat([df_train['text'], df_test['text']])
-    count_vect = CountVectorizer() #word count vectorization
-    X_text_counts = count_vect.fit_transform(df).toarray()
-    X_train_text_count = X_text_counts[0:df_train.shape[0],:]
-    X_test_text_count = X_text_counts[df_train.shape[0]:,:]
-
-    tfidf_vect = TfidfVectorizer() #tfidf count vectorization
-    X_text_tfidf = tfidf_vect.fit_transform(df).toarray()
-    X_train_text_tfidf = X_text_tfidf[0:df_train.shape[0],:]
-    X_test_text_tfidf = X_text_tfidf[df_train.shape[0]:,:]
+    X_test_text_count=X_test_text_tfidf=X_train_text_count=X_train_text_tfidf=None
 
     logger.info('finish vectorizing data')
-
     if os.path.exists('data/X_test_text_count-'+fill_na_opt+'.csv') and \
-            os.path.exists('data/X_test_text_tfidf-'+fill_na_opt+'.csv'):
+            os.path.exists('data/X_test_text_tfidf-'+fill_na_opt+'.csv') \
+            os.path.exists('data/X_train_text_count-'+fill_na_opt+'.csv') and \
+            os.path.exists('data/X_train_text_tfidf-'+fill_na_opt+'.csv'):
         X_test_text_count = np.loadtxt('data/X_test_text_count-'+fill_na_opt+'.csv', \
                 delimiter=',')
         X_test_text_tfidf = np.loadtxt('data/X_test_text_tfidf-'+fill_na_opt+'.csv', \
                 delimiter=',')
+        X_train_text_count = np.loadtxt('data/X_train_text_count-'+fill_na_opt+'.csv', \
+                delimiter=',')
+        X_train_text_tfidf = np.loadtxt('data/X_train_text_tfidf-'+fill_na_opt+'.csv', \
+                delimiter=',')
+
     else:
+        df = pd.concat([df_train['text'], df_test['text']])
+        count_vect = CountVectorizer() #word count vectorization
+        X_text_counts = count_vect.fit_transform(df).toarray()
+        X_train_text_count = X_text_counts[0:df_train.shape[0],:]
+        X_test_text_count = X_text_counts[df_train.shape[0]:,:]
+
+        tfidf_vect = TfidfVectorizer() #tfidf count vectorization
+        X_text_tfidf = tfidf_vect.fit_transform(df).toarray()
+        X_train_text_tfidf = X_text_tfidf[0:df_train.shape[0],:]
+        X_test_text_tfidf = X_text_tfidf[df_train.shape[0]:,:]
+
         X_test_text_tfidf, X_test_text_count = fill_na_test(df_train, df_test, \
                 X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, \
                 X_test_text_count, fill_na_opt)
