@@ -14,6 +14,7 @@ import numpy as np
 import gc
 import sys
 import os
+import json
 import time
 import logging
 import datetime
@@ -114,9 +115,9 @@ def preprocess_data(df_train, df_test, fill_na_opt):
 
     X_test_text_count=X_test_text_tfidf=X_train_text_count=X_train_text_tfidf=None
 
-    logger.info('finish vectorizing data')
+    logger.info('start vectorizing data')
     if os.path.exists('data/X_test_text_count-'+fill_na_opt+'.csv') and \
-            os.path.exists('data/X_test_text_tfidf-'+fill_na_opt+'.csv') \
+            os.path.exists('data/X_test_text_tfidf-'+fill_na_opt+'.csv') and \
             os.path.exists('data/X_train_text_count-'+fill_na_opt+'.csv') and \
             os.path.exists('data/X_train_text_tfidf-'+fill_na_opt+'.csv'):
         X_test_text_count = np.loadtxt('data/X_test_text_count-'+fill_na_opt+'.csv', \
@@ -127,40 +128,32 @@ def preprocess_data(df_train, df_test, fill_na_opt):
                 delimiter=',')
         X_train_text_tfidf = np.loadtxt('data/X_train_text_tfidf-'+fill_na_opt+'.csv', \
                 delimiter=',')
-
     else:
-        df = pd.concat([df_train['text'], df_test['text']])
+        df = pd.concat([df_train['text'].str.replace('[^a-zA-Z]',' ')+\
+            ' '+df_train['phone_brand_en'].str.replace('[^a-zA-Z]',' ')+\
+            ' '+df_train['device_model_en'].str.replace('[^a-zA-Z]',' '), \
+                df_test['text'].str.replace('[^a-zA-Z]',' ')+\
+            ' '+df_test['phone_brand_en'].str.replace('[^a-zA-Z]',' ')+\
+            ' '+df_test['device_model_en'].str.replace('[^a-zA-Z]',' ')])
         count_vect = CountVectorizer() #word count vectorization
         X_text_counts = count_vect.fit_transform(df).toarray()
         X_train_text_count = X_text_counts[0:df_train.shape[0],:]
         X_test_text_count = X_text_counts[df_train.shape[0]:,:]
+        with open('data/count_vocab.json', 'w') as outfile:
+            json.dump(count_vect.vocabulary_, outfile, indent=1)
 
         tfidf_vect = TfidfVectorizer() #tfidf count vectorization
         X_text_tfidf = tfidf_vect.fit_transform(df).toarray()
         X_train_text_tfidf = X_text_tfidf[0:df_train.shape[0],:]
         X_test_text_tfidf = X_text_tfidf[df_train.shape[0]:,:]
+        with open('data/tfidf_vocab.json', 'w') as outfile:
+            json.dump(tfidf_vect.vocabulary_, outfile, indent=1)
 
         X_test_text_tfidf, X_test_text_count = fill_na_test(df_train, df_test, \
                 X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, \
                 X_test_text_count, fill_na_opt)
 
-    # vectorizing phone_brand device_model
-    df = pd.concat([df_train['phone_brand_en']+' '+df_train['device_model_en'], \
-            df_test['phone_brand_en']+' '+df_test['device_model_en']])
-
-    X_pd_counts = count_vect.fit_transform(df).toarray()
-    X_train_pd_count = X_pd_counts[0:df_train.shape[0],:]
-    X_test_pd_count = X_pd_counts[df_train.shape[0]:,:]
-
-    X_pd_tfidf = tfidf_vect.fit_transform(df).toarray()
-    X_train_pd_tfidf = X_pd_tfidf[0:df_train.shape[0],:]
-    X_test_pd_tfidf = X_pd_tfidf[df_train.shape[0]:,:]
-
-    # concatenate text, phone brand, device model matrix
-    X_train_text_count = np.hstack([X_train_text_count, X_train_pd_count])
-    X_test_text_count = np.hstack([X_test_text_count, X_test_pd_count])
-    X_train_text_tfidf = np.hstack([X_train_text_tfidf, X_train_pd_tfidf])
-    X_test_text_tfidf = np.hstack([X_test_text_tfidf, X_test_pd_tfidf])
+    logger.info('finish vectorizing data')
 
     # numeric phone_brand
     df = pd.concat([df_train['phone_brand_en'], df_test['phone_brand_en']])
