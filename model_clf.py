@@ -6,7 +6,7 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import maxabs_scale
+from sklearn.preprocessing import minmax_scale
 from sklearn.decomposition import PCA
 import xgboost as xgb
 import pandas as pd
@@ -21,12 +21,13 @@ import datetime
 import ConfigParser
 from parameter_tune import *
 
+PATH = 'data' # China data is under 'data/China'
 # create logger
 logger = logging.getLogger('Talking-Data-model')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 # create console handler and set level to debug
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging.INFO)
 # create formatter
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # add formatter to ch
@@ -34,18 +35,12 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
-#### "application" code
-# logger.debug("debug message")
-# logger.info("info message")
-# logger.warn("warn message")
-# logger.error("error message")
-# logger.critical("critical message")
-
 def train_model_with_feature(config_name, clf_name, fill_na_opt, PCA_n_comp, clf, X, X_test, y):
     if PCA_n_comp!=-1:
         pca = PCA(PCA_n_comp) #PCA dimension reduction
         logger.info('PCA fit on count matrix')
-        X_all = pca.fit_transform(np.vstack([X, X_test]))
+        # rescale num to (0,1)
+        X_all = pca.fit_transform( minmax_scale(np.vstack([X, X_test])) )
         X, X_test = X_all[:X.shape[0], :], X_all[X.shape[0]:, :]
         logger.info('PCA fit done')
 
@@ -58,7 +53,7 @@ def train_model_with_feature(config_name, clf_name, fill_na_opt, PCA_n_comp, clf
         clf.fit(X_train,y_train)
     logger.info(clf_name+'-'+fill_na_opt+'-pca('+str(PCA_n_comp)+') train log-loss='\
             +str(log_loss(y_train, clf.predict_proba(X_train))))
-    logger.info(clf_name+'-'+fill_na_opt+'-pca('+str(PCA_n_comp)+')validate log-loss='\
+    logger.info(clf_name+'-'+fill_na_opt+'-pca('+str(PCA_n_comp)+') validate log-loss='\
             +str(log_loss(y_val, clf.predict_proba(X_val))))
 
     clf.fit(X, y)
@@ -97,10 +92,10 @@ def fill_na_test(df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, \
                     X_test_text_count[i,:]=X_train_text_count[group.index,:].mean(axis=0)
 
     ## save filled matrix
-    np.savetxt('data/X_test_text_count-'+option+'.csv', X_test_text_count, delimiter=',')
-    np.savetxt('data/X_test_text_tfidf-'+option+'.csv', X_test_text_tfidf, delimiter=',')
-    np.savetxt('data/X_train_text_count-'+option+'.csv', X_train_text_count, delimiter=',')
-    np.savetxt('data/X_train_text_tfidf-'+option+'.csv', X_train_text_tfidf, delimiter=',')
+    np.savetxt(PATH+'/X_test_text_count-'+option+'.csv', X_test_text_count, delimiter=',')
+    np.savetxt(PATH+'/X_test_text_tfidf-'+option+'.csv', X_test_text_tfidf, delimiter=',')
+    np.savetxt(PATH+'/X_train_text_count-'+option+'.csv', X_train_text_count, delimiter=',')
+    np.savetxt(PATH+'/X_train_text_tfidf-'+option+'.csv', X_train_text_tfidf, delimiter=',')
     logger.info('finish filling na data')
 
     return X_test_text_tfidf, X_test_text_count
@@ -116,37 +111,37 @@ def preprocess_data(df_train, df_test, fill_na_opt):
     X_test_text_count=X_test_text_tfidf=X_train_text_count=X_train_text_tfidf=None
 
     logger.info('start vectorizing data')
-    if os.path.exists('data/X_test_text_count-'+fill_na_opt+'.csv') and \
-            os.path.exists('data/X_test_text_tfidf-'+fill_na_opt+'.csv') and \
-            os.path.exists('data/X_train_text_count-'+fill_na_opt+'.csv') and \
-            os.path.exists('data/X_train_text_tfidf-'+fill_na_opt+'.csv'):
-        X_test_text_count = np.loadtxt('data/X_test_text_count-'+fill_na_opt+'.csv', \
+    if os.path.exists(PATH+'/X_test_text_count-'+fill_na_opt+'.csv') and \
+            os.path.exists(PATH+'/X_test_text_tfidf-'+fill_na_opt+'.csv') and \
+            os.path.exists(PATH+'/X_train_text_count-'+fill_na_opt+'.csv') and \
+            os.path.exists(PATH+'/X_train_text_tfidf-'+fill_na_opt+'.csv'):
+        X_test_text_count = np.loadtxt(PATH+'/X_test_text_count-'+fill_na_opt+'.csv', \
                 delimiter=',')
-        X_test_text_tfidf = np.loadtxt('data/X_test_text_tfidf-'+fill_na_opt+'.csv', \
+        X_test_text_tfidf = np.loadtxt(PATH+'/X_test_text_tfidf-'+fill_na_opt+'.csv', \
                 delimiter=',')
-        X_train_text_count = np.loadtxt('data/X_train_text_count-'+fill_na_opt+'.csv', \
+        X_train_text_count = np.loadtxt(PATH+'/X_train_text_count-'+fill_na_opt+'.csv', \
                 delimiter=',')
-        X_train_text_tfidf = np.loadtxt('data/X_train_text_tfidf-'+fill_na_opt+'.csv', \
+        X_train_text_tfidf = np.loadtxt(PATH+'/X_train_text_tfidf-'+fill_na_opt+'.csv', \
                 delimiter=',')
     else:
-        df = pd.concat([df_train['text'].str.replace('[^a-zA-Z]',' ')+\
-            ' '+df_train['phone_brand_en'].str.replace('[^a-zA-Z]',' ')+\
-            ' '+df_train['device_model_en'].str.replace('[^a-zA-Z]',' '), \
-                df_test['text'].str.replace('[^a-zA-Z]',' ')+\
-            ' '+df_test['phone_brand_en'].str.replace('[^a-zA-Z]',' ')+\
-            ' '+df_test['device_model_en'].str.replace('[^a-zA-Z]',' ')])
+        df = pd.concat([df_train['text'].str.replace('[^a-zA-Z ]',' ')+\
+            ' '+df_train['phone_brand_en'].str.replace('[^a-zA-Z ]',' ')+\
+            ' '+df_train['device_model_en'].str.replace('[^a-zA-Z ]',' '), \
+                df_test['text'].str.replace('[^a-zA-Z ]',' ')+\
+            ' '+df_test['phone_brand_en'].str.replace('[^a-zA-Z ]',' ')+\
+            ' '+df_test['device_model_en'].str.replace('[^a-zA-Z ]',' ')])
         count_vect = CountVectorizer() #word count vectorization
         X_text_counts = count_vect.fit_transform(df).toarray()
         X_train_text_count = X_text_counts[0:df_train.shape[0],:]
         X_test_text_count = X_text_counts[df_train.shape[0]:,:]
-        with open('data/count_vocab.json', 'w') as outfile:
+        with open(PATH+'/count_vocab.json', 'w') as outfile:
             json.dump(count_vect.vocabulary_, outfile, indent=1)
 
         tfidf_vect = TfidfVectorizer() #tfidf count vectorization
         X_text_tfidf = tfidf_vect.fit_transform(df).toarray()
         X_train_text_tfidf = X_text_tfidf[0:df_train.shape[0],:]
         X_test_text_tfidf = X_text_tfidf[df_train.shape[0]:,:]
-        with open('data/tfidf_vocab.json', 'w') as outfile:
+        with open(PATH+'/tfidf_vocab.json', 'w') as outfile:
             json.dump(tfidf_vect.vocabulary_, outfile, indent=1)
 
         X_test_text_tfidf, X_test_text_count = fill_na_test(df_train, df_test, \
@@ -202,8 +197,8 @@ if __name__=='__main__':
 
     logger.info('reading data')
     global group_list, df_test
-    df_train = pd.read_csv('data/train_text_China.csv', dtype={'device_id':str})
-    df_test = pd.read_csv('data/test_text_China.csv', dtype={'device_id':str})
+    df_train = pd.read_csv(PATH+'/train_text.csv', dtype={'device_id':str})
+    df_test = pd.read_csv(PATH+'/test_text.csv', dtype={'device_id':str})
 
     df_train, df_test, X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, \
             X_test_text_count = preprocess_data(df_train, df_test, fill_na_opt)
