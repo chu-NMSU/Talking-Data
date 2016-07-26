@@ -7,16 +7,18 @@ import time
 import matplotlib
 import matplotlib.pyplot as plt
 
+# pd.set_option("display.max_rows",101) # set # of display rows
+pattern = re.compile('[a-fA-Z0-9_ ]+')
+
+def text_process_fun(x):
+    # if re.match(pattern, x):
+    #     return x
+    # else:
+    return pinyin.get(x, format='strip', delimiter=' ').replace(' ', '')
+
+
 def main():
-    # pd.set_option("display.max_rows",101) # set # of display rows
-    pattern = re.compile('[a-fA-Z0-9_ ]+')
-
-    def text_process_fun(x):
-        # if re.match(pattern, x):
-        #     return x
-        # else:
-        return pinyin.get(x, format='strip', delimiter=' ').replace(' ', '')
-
+    global df_train, df_test, df_train_join, df_test_join, app_text
     start_time = time.time()
     # timestamp: 2016-05-01 00:55:25
     events = pd.read_csv('data/events.csv', dtype={'device_id':str})
@@ -112,7 +114,7 @@ def main():
     # df_train_join['text_brand'] = df_train_join['text'] + ' ' + df_train_join['phone_brand_en']\
     #         + ' ' + df_train_join['device_model_en']
 
-    '''9/11 test case have missing values...'''
+    '''9/11 test case have text missing ...'''
     # df_test_join.shape =             (112071, 12)
     # df_test_join.text.isnull().sum() = 95226 # 
     df_test_join = df_test.merge(events_phone_join, on=['device_id'], how='left') # 

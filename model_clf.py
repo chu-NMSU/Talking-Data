@@ -135,14 +135,14 @@ def preprocess_data(df_train, df_test, fill_na_opt):
         X_train_text_count = X_text_counts[0:df_train.shape[0],:]
         X_test_text_count = X_text_counts[df_train.shape[0]:,:]
         with open(PATH+'/count_vocab.json', 'w') as outfile:
-            json.dump(count_vect.vocabulary_, outfile, indent=1)
+            json.dump(count_vect.vocabulary_, outfile, indent=1, sort_keys=True)
 
         tfidf_vect = TfidfVectorizer() #tfidf count vectorization
         X_text_tfidf = tfidf_vect.fit_transform(df).toarray()
         X_train_text_tfidf = X_text_tfidf[0:df_train.shape[0],:]
         X_test_text_tfidf = X_text_tfidf[df_train.shape[0]:,:]
         with open(PATH+'/tfidf_vocab.json', 'w') as outfile:
-            json.dump(tfidf_vect.vocabulary_, outfile, indent=1)
+            json.dump(tfidf_vect.vocabulary_, outfile, indent=1, sort_keys=True)
 
         X_test_text_tfidf, X_test_text_count = fill_na_test(df_train, df_test, \
                 X_train_text_tfidf, X_test_text_tfidf, X_train_text_count, \
