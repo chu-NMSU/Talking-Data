@@ -104,7 +104,7 @@ def main():
 
     # '''some device do not have records, use brand and model to fill the text'''
     df_train_join = df_train.merge(events_phone_join, on=['device_id']) # , how='left'
-    df_train_join['text'].fillna('', inplace=True)
+    # df_train_join['text'].fillna('', inplace=True)
     # a = df_train_join[['device_id']].merge(phone[['device_id','phone_brand_en','device_model_en']], \
     #         on='device_id')
     # a.sort_values(by='device_id', inplace=True)
@@ -119,7 +119,7 @@ def main():
     # df_test_join.text.isnull().sum() = 95226 # 
     df_test_join = df_test.merge(events_phone_join, on=['device_id'], how='left') # 
     df_test_join.drop_duplicates(subset=['device_id'],inplace=True) # keep only one unique device_id
-    df_test_join['text'].fillna('', inplace=True)
+    # df_test_join['text'].fillna('', inplace=True)
     a = df_test_join[['device_id']].merge(phone[['device_id','phone_brand_en','device_model_en']], \
             on='device_id')
     a.sort_values(by='device_id', inplace=True)
